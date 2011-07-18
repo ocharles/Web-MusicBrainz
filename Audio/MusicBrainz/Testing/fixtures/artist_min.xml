@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#" xmlns:ext="http://musicbrainz.org/ns/ext#-2.0">
+  <artist-list offset="0" count="1">
+    <artist ext:score="100" type="group" id="aaaaaa-aaaa-aaaa-aaaa-aaaaaaa">
+      <name>Dr. Funke's 100% Natural Good-Time Family-Band Solution</name>
+    </artist>
+  </artist-list>
+</metadata>

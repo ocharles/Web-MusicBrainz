@@ -1,0 +1,5 @@
+Audio.MusicBrainz
+------------
+
+Haskell implementation of the MusicBrainz w2 API. For more info, see
+http://www.musicbrainz.org

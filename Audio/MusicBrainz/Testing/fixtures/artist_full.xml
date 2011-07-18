@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<metadata xmlns="http://musicbrainz.org/ns/mmd-2.0#" xmlns:ext="http://musicbrainz.org/ns/ext#-2.0">
+  <artist-list offset="0" count="1">
+    <artist ext:score="100" type="group" id="aaaaaa-aaaa-aaaa-aaaa-aaaaaaa">
+      <name>Dr. Funke's 100% Natural Good-Time Family-Band Solution</name>
+      <sort-name>Dr. Funke's 100% Natural Good-Time Family-Band Solution</sort-name>
+      <country>US</country>
+      <gender>Male</gender>
+      <disambiguation>Good-Time Family-Band Solution</disambiguation>
+      <life-span>
+        <begin>1993-05-25</begin>
+        <end>1997</end>
+      </life-span>
+      <alias-list>
+        <alias>The Funke Bunch</alias>
+        <alias>The Teamocil Band</alias>
+      </alias-list>
+      <tag-list>
+        <tag count="1">
+          <name>prescription folk</name>
+        </tag>
+        <tag count="1">
+          <name>family band</name>
+        </tag>
+      </tag-list>
+      <rating votes-count="23">4.3</rating>
+    </artist>
+  </artist-list>
+</metadata>
