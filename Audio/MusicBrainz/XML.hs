@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
-module Audio.MusicBrainz.XML (parseArtist) where
+module Audio.MusicBrainz.XML where--DEBUG
+--module Audio.MusicBrainz.XML (parseArtist, (!<//.>)) where
 
 import           Data.List.Split (splitOn)
 import           Data.Maybe (listToMaybe)
@@ -18,38 +19,27 @@ import Control.Monad
 
 import Audio.MusicBrainz.Types
 
-parseArtist :: F.Failure XmlException m => Cu.Cursor -> m Artist
-parseArtist el = do n  <-                                el !<|> "name"
-                    i  <-                                el !<@> "id"
-                    t  <-                                el !<@> "type"
-                    ls <- parseLifeSpan $                el ?<.> "life-span"
-                    r  <- return $ parseRating =<<       el ?<.> "rating"
-                    sn <- return $                       el ?<|> "sort-name"
-                    g  <- return $                       el ?<|> "gender"
-                    d  <- return $                       el ?<|> "disambiguation"
-                    c  <- return $ (read . T.unpack) =<< el ?<|> "country"
-                    as <- mapM cont $                    el !<//.> ["alias-list", "alias"]
-                    ts <- return $ Tag <$>               el !<//|> ["alias-list", "alias"]
-                    return Artist { artistId             = i,
-                                    artistName           = n,
-                                    artistType           = t,
-                                    artistAliases        = as,
-                                    artistSortName       = sn,
-                                    artistLifeSpan       = ls,
-                                    artistCountry        = c,
-                                    artistGender         = g,
-                                    artistDisambiguation = d,
-                                    --TODO
-                                    artistRecordings   = [],
-                                    artistReleases     = [],
-                                    artistLabels       = [],
-                                    artistWorks        = [],
-                                    artistRelationLists= [],
-                                    artistUserTags     = [],
-                                    artistRating       = r,
-                                    artistUserRating   = Nothing,
+parseArtist :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Artist
+parseArtist el = Artist <$> (el !<@> "id")
+                        <*> (el !<@> "type")
+                        <*> (el !<|> "name")
+                        <*> (mapM cont $                  el !<//.> ["alias-list", "alias"])
+                        <*> (pure $                       el ?<|> "sort-name")
+                        <*> (parseLifeSpan $              el ?<.> "life-span")
+                        <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                        <*> (pure $                       el ?<|> "gender")
+                        <*> (pure $                       el ?<|> "disambiguation")
+                        --TODO
+                        <*> (pure $                       []) -- Recordings
+                        <*> (pure $                       []) -- Releases
+                        <*> (pure $                       []) -- Labels
+                        <*> (pure $                       []) -- Works
+                        <*> (pure $                       []) -- RelationLists
+                        <*> (pure $                       []) -- UserTags
 
-                                    artistTags           = ts }
+                        <*> (pure $ parseRating =<<       el ?<.> "rating")
+                        <*> (pure $ parseUserRating =<<       el ?<.> "user-rating")
+                        <*> (pure $ Tag <$>               el !<//|> ["tag-list", "tag", "name"])
 
 ---- Helpers
 
@@ -79,7 +69,7 @@ el ?<.> n = listToMaybe $ el $/ laxElement n
 el !<//.> path = el $/ (foldl1 (&/) $ map laxElement path)
 
 (!<//|>) :: Cu.Cursor -> [T.Text] -> [T.Text]
-el !<//|> path = concatMap content $ el !<//.> path
+el !<//|> path = concatMap ($/ content) $ el !<//.> path
 
 elContent :: T.Text -> Cursor -> [T.Text]
 elContent name = laxElement name &/ content

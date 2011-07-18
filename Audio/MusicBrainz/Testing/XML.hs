@@ -8,19 +8,11 @@ import Audio.MusicBrainz.Testing.Ext
 import Audio.MusicBrainz.Types
 import Audio.MusicBrainz.XML
 
---DEBUG
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
-import           Text.XML.Enumerator.Cursor
-import Data.Maybe
-
 specs ::  IO [IO Spec]
---specs = descriptions [parseArtist_full, parseArtist_min]
-specs = descriptions [parseArtist_min]
+specs = descriptions [parseArtist_full, parseArtist_min]
 
 parseArtist_full :: IO [IO Spec]
 parseArtist_full = do fullArtist <- parseArtist . firstArtist =<< readFixture "artist_full.xml"
-                      putStrLn . show $ fullArtist
                       describe 
                         "full Artist profile" 
                         [ it "parses the full artist" $ fullArtist == expectedArtist ]
@@ -73,4 +65,4 @@ parseArtist_min = do fullArtist <- parseArtist . firstArtist =<< readFixture "ar
                                   artistTags           = [] }
 
 firstArtist :: Cursor -> Cursor
-firstArtist root = head $ deepPath root ["artist-list", "artist"]
+firstArtist root = head $ root !<//.> ["artist-list", "artist"]
