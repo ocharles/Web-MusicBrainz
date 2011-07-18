@@ -15,10 +15,12 @@ import           Text.XML.Enumerator.Cursor
 import Data.Maybe
 
 specs ::  IO [IO Spec]
-specs = descriptions [parseArtist_full, parseArtist_min]
+--specs = descriptions [parseArtist_full, parseArtist_min]
+specs = descriptions [parseArtist_min]
 
 parseArtist_full :: IO [IO Spec]
 parseArtist_full = do fullArtist <- parseArtist . firstArtist =<< readFixture "artist_full.xml"
+                      putStrLn . show $ fullArtist
                       describe 
                         "full Artist profile" 
                         [ it "parses the full artist" $ fullArtist == expectedArtist ]
@@ -46,6 +48,7 @@ parseArtist_full = do fullArtist <- parseArtist . firstArtist =<< readFixture "a
 
 parseArtist_min :: IO [IO Spec]
 parseArtist_min = do fullArtist <- parseArtist . firstArtist =<< readFixture "artist_min.xml"
+                     putStrLn . show $ fullArtist
                      describe 
                        "minimal Artist profile" 
                        [ it "parses the minimal artist" $ fullArtist == expectedArtist ]
