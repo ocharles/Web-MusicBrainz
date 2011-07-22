@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
-module Audio.MusicBrainz.XML where--DEBUG
---module Audio.MusicBrainz.XML (parseArtist, (!<//.>)) where
+module Audio.MusicBrainz.XML (parseArtist,
+                              parseRecording,
+                              (!<//.>)
+                              ) where
 
 import           Data.List.Split (splitOn)
 import           Data.Maybe (listToMaybe)
@@ -16,13 +18,14 @@ import qualified Control.Exception            as C
 
 import Control.Applicative
 import Control.Monad
+import Data.Monoid
 
 import Audio.MusicBrainz.Types
 
 parseArtist :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Artist
-parseArtist el = Artist <$> (el !<@> "id")
-                        <*> (el !<@> "type")
-                        <*> (el !<|> "name")
+parseArtist el = Artist <$> el !<@> "id"
+                        <*> el !<@> "type"
+                        <*> el !<|> "name"
                         <*> (mapM cont $                  el !<//.> ["alias-list", "alias"])
                         <*> (pure $                       el ?<|> "sort-name")
                         <*> (parseLifeSpan $              el ?<.> "life-span")
@@ -34,18 +37,55 @@ parseArtist el = Artist <$> (el !<@> "id")
                         <*> (pure $                       []) -- Releases
                         <*> (pure $                       []) -- Labels
                         <*> (pure $                       []) -- Works
-                        <*> (pure $                       []) -- RelationLists
-                        <*> (pure $                       []) -- UserTags
+                        <*> (pure $ mapM parseRelationList $ el !<//.> ["relation-list"])
 
                         <*> (pure $ parseRating =<<       el ?<.> "rating")
-                        <*> (pure $ parseUserRating =<<       el ?<.> "user-rating")
-                        <*> (pure $ Tag <$>               el !<//|> ["tag-list", "tag", "name"])
+                        <*> (pure $ parseUserRating =<<   el ?<.> "user-rating")
+                        <*> (pure $                       parseUserTags el ++ parseUserTags el)
+        
 
+parseRecording :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Recording
+parseRecording el = Recording <$> el !<@> "id"
+                              <*> el !<|> "title"
+                              <*> (pure $ (read . T.unpack) <$>   el ?<|> "length")
+                              <*> (pure $                         el ?<|> "disambiguation")
+                              <*> (mapM parseNameCredit $   el !<//.> ["artist-credit", "name-credit"])
+                              <*> (mapM parseRelease $     el !<//.> ["r el ease-list", "r el ease"]) --CHECKME
+                              <*> (                         liftM2 (++) puids isrcs)
+                              <*> (pure $ map parseRelationList $ el !<//.> ["r el ation-list"])
+                              <*> (pure $                         parseUserTags el ++ parseUserTags el)
+                              <*> (pure $ parseRating =<<         el ?<.> "rating")
+                              <*> (pure $ parseUserRating =<<     el ?<.> "user-rating")
+  where puids        = mapM (idPath PUID) $ el !<//.> ["puid-list", "puid"]
+        isrcs        = mapM (idPath ISRC) $ el !<//.> ["isrc-list", "isrc"]
+        idPath con c = con <$> (c !<@> "id")
+
+parseNameCredit :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m NameCredit
+parseNameCredit el = NameCredit <$> (pure $ el ?<@> "joinphrase")
+                                <*> el !<|> "name"
+
+parseRelease :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Release
+parseRelease el = Release <$> el !<@> "id"
+                          <*> el !<|> "title"
+                          <*> (pure $ el ?<|> "status")
+                          <*> (pure $ parseQuality =<< el ?<.> "quality")
+                          <*> (pure $ el ?<|> "disambiguation")
+                          <*> (pure $ el ?<|> "packaging")
+                          <*> (pure $ parseTextRepresentation <$> el ?<.> "text-representation")
+                          <*> (mapM parseNameCredit $ el !<//.> ["artist-credit", "name-credit"])
+                          <*> (pure $ parseDate =<<  el ?<|> "date")
+                          <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                          <*> (pure $ el ?<|> "barcode")
+                          <*> (pure $ Asin <$> el ?<|> "asin")
+                          <*> (pure $ mapM parseRelationList $ el !<//.> ["relation-list"])
 ---- Helpers
 
 -- Get attribute of cursor
 (!<@>) :: F.Failure XmlException m => Cu.Cursor -> T.Text -> m T.Text
 el !<@> n = forceEx ("missing " ++ T.unpack n) $ el $| laxAttribute n
+
+(?<@>) :: Cu.Cursor -> T.Text -> Maybe T.Text
+el ?<@> n =  listToMaybe $ el $| laxAttribute n
 
 -- Shorthand to get content of named tag
 (!<|>) :: F.Failure XmlException m => Cu.Cursor -> T.Text -> m T.Text
@@ -71,9 +111,6 @@ el !<//.> path = el $/ (foldl1 (&/) $ map laxElement path)
 (!<//|>) :: Cu.Cursor -> [T.Text] -> [T.Text]
 el !<//|> path = concatMap ($/ content) $ el !<//.> path
 
-elContent :: T.Text -> Cursor -> [T.Text]
-elContent name = laxElement name &/ content
-
 forceEx :: F.Failure XmlException m => String -> [a] -> m a
 forceEx = Cu.force . XmlException
 
@@ -90,6 +127,9 @@ parseLifeSpan (Just el) = return (pDate <$> fromEl "begin", pDate <$> fromEl "en
         finalize (Just a:b:c:_) = PartialDate (read a) (read <$> b) (read <$> c)
         fromEl n = T.unpack <$> el ?<|> n
 
+parseDate = undefined --TODO
+parseRelationList = undefined --TODO
+
 parseRating :: F.Failure XmlException m => Cu.Cursor -> m Rating
 parseRating el = (return . uncurry) Rating `ap` parseRating' el
 
@@ -101,6 +141,24 @@ parseRating' :: F.Failure XmlException m => Cu.Cursor -> m (Int, Float)
 parseRating' el = do count <- el !<@> "votes-count"
                      let val = read . T.unpack . head $ el $/ content
                      return ((read . T.unpack) count, val)
+
+parseUserTags :: Cu.Cursor -> [Tag]
+parseUserTags el = UserTag <$> el !<//|> ["user-tag-list", "user-tag", "name"]
+
+parseTags :: Cu.Cursor -> [Tag]
+parseTags el = Tag <$> el !<//|> ["tag-list", "tag", "name"]
+
+parseQuality :: F.Failure XmlException m => Cu.Cursor -> m Quality
+parseQuality el = readQuality . T.unpack =<< el !<|> "value"
+  where readQuality "high" = return High
+        readQuality "normal" = return Normal
+        readQuality "low" = return Low
+        readQuality q = fail $ "Unexpected quality " ++ q
+
+parseTextRepresentation :: Cu.Cursor -> TextRepresentation
+parseTextRepresentation el = TextRepresentation language script
+  where language = el ?<|> "language"
+        script   = el ?<|> "script"
 
 pad :: Int -> [a] -> [Maybe a]
 pad n xs = (Just <$> xs') ++ replicate (n - length xs) Nothing
