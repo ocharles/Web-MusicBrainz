@@ -35,6 +35,8 @@
       <recording-list>
         <recording id="bbbbbb-bbbb-bbbb-bbbb-bbbbbbb">
           <title>Timosil</title>
+          <length>300</length>
+          <disambiguation>Timosil</disambiguation>
         </recording>
       </recording-list>
     </artist>

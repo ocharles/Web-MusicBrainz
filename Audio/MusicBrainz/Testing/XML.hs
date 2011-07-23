@@ -76,9 +76,9 @@ minimalArtist = Artist { artistId             = "aaaaaa-aaaa-aaaa-aaaa-aaaaaaa",
 fullRecording :: Recording
 fullRecording = Recording { recordingId             = "bbbbbb-bbbb-bbbb-bbbb-bbbbbbb",
                             recordingTitle          = "Timosil",
+                            recordingLength         = Just 300,
+                            recordingDisambiguation = Just "Timosil",
                             --TODO
-                            recordingLength         = Nothing,
-                            recordingDisambiguation = Nothing,
                             recordingArtistCredit   = [],
                             recordingReleases       = [],
                             recordingIdentifiers    = [],
