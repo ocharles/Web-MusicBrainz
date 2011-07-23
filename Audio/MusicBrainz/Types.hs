@@ -60,7 +60,19 @@ data Artist = Artist { artistId             :: Text,
                        artistUserRating     :: Maybe UserRating,
                        artistTags           :: [Tag] } deriving (Show, Eq)
 
-data Label = Label deriving (Show, Eq)
+data Label = Label { labelId             :: Text,
+                     labelType           :: Maybe Text,
+                     labelName           :: Text,
+                     labelSortName       :: Maybe Text,
+                     labelCode           :: Maybe Int,
+                     labelDisambiguation :: Maybe Text,
+                     labelCountry        :: Maybe CountryCode,
+                     labelLifeSpan       :: Maybe LifeSpan,
+                     labelAliases        :: [Text],
+                     labelRelations      :: [Relation],
+                     labelTags           :: [Tag],
+                     labelRating         :: Maybe Rating,
+                     labelUserRating     :: Maybe UserRating } deriving (Show, Eq)
 
 data Recording = Recording { recordingId             :: Text,
                              recordingTitle          :: Text,
