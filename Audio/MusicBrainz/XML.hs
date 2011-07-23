@@ -41,7 +41,7 @@ parseArtist el = Artist <$> el !<@> "id"
 
                         <*> (pure $ parseRating =<<       el ?<.> "rating")
                         <*> (pure $ parseUserRating =<<   el ?<.> "user-rating")
-                        <*> (pure $                       parseUserTags el ++ parseUserTags el)
+                        <*> (pure $                       parseTags el ++ parseUserTags el)
         
 
 parseRecording :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Recording

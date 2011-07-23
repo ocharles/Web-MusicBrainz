@@ -30,17 +30,16 @@ parseArtist_full = do fullArtist <- parseArtist . firstArtist =<< readFixture "a
                                   artistReleases     = [],
                                   artistLabels       = [],
                                   artistWorks        = [],
-                                  artistRelationLists= [],
+                                  artistRelationLists = [[]],
                                   artistRating       = Just Rating { ratingVotes = 23, ratingScore = 4.3},
                                   artistUserRating   = Nothing,
-                                  artistTags           = [Tag "prescription folk", Tag "family band"] }
+                                  artistTags           = [Tag "prescription folk", Tag "family band", UserTag "arrested development bands", UserTag "broken up"] }
         pd1 = PartialDate 1993 (Just 5) (Just 25)
         pd2 = PartialDate 1997 Nothing Nothing
         --TODO: test user tags and tags getting merged
 
 parseArtist_min :: IO [IO Spec]
 parseArtist_min = do fullArtist <- parseArtist . firstArtist =<< readFixture "artist_min.xml"
-                     putStrLn . show $ fullArtist
                      describe 
                        "minimal Artist profile" 
                        [ it "parses the minimal artist" $ fullArtist == expectedArtist ]
@@ -58,7 +57,7 @@ parseArtist_min = do fullArtist <- parseArtist . firstArtist =<< readFixture "ar
                                   artistReleases     = [],
                                   artistLabels       = [],
                                   artistWorks        = [],
-                                  artistRelationLists= [],
+                                  artistRelationLists = [[]],
                                   artistRating       = Nothing,
                                   artistUserRating   = Nothing,
                                   artistTags           = [] }
