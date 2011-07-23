@@ -32,6 +32,11 @@
         </user-tag>
       </user-tag-list>
       <rating votes-count="23">4.3</rating>
+      <recording-list>
+        <recording id="bbbbbb-bbbb-bbbb-bbbb-bbbbbbb">
+          <title>Timosil</title>
+        </recording>
+      </recording-list>
     </artist>
   </artist-list>
 </metadata>

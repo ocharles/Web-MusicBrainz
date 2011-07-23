@@ -33,11 +33,11 @@ parseArtist el = Artist <$> el !<@> "id"
                         <*> (pure $                       el ?<|> "gender")
                         <*> (pure $                       el ?<|> "disambiguation")
                         --TODO
-                        <*> (pure $                       []) -- Recordings
+                        <*> (mapM parseRecording $ el !<//.> ["recording-list", "recording"]) -- Recordings
                         <*> (pure $                       []) -- Releases
                         <*> (pure $                       []) -- Labels
                         <*> (pure $                       []) -- Works
-                        <*> (pure $ mapM parseRelationList $ el !<//.> ["relation-list"])
+                        <*> (mapM parseRelationList $ el !<//.> ["relation-list"])
 
                         <*> (pure $ parseRating =<<       el ?<.> "rating")
                         <*> (pure $ parseUserRating =<<   el ?<.> "user-rating")

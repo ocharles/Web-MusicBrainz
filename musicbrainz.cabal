@@ -18,7 +18,7 @@ homepage:           http://github.com/michaelxavier/MusicBrainz
 
 library
  Exposed-modules: Audio.MusicBrainz,
-                  Audio.MusicBrainz.Types,
+                  Audio.MusicBrainz.Types
  Ghc-Options:     -Wall
  build-depends:   base            >= 4        && < 5,
                   text            >= 0.11.0.5 && < 0.12,
@@ -26,7 +26,8 @@ library
                   http-types      >= 0.6.0    && < 0.7,
                   url             >= 2.1.2    && < 2.3,
                   iso3166-country-codes == 0.20101223.3,
-                  split           >= 0.1.4    && < 0.2
+                  split           >= 0.1.4    && < 0.2,
+                  xml-enumerator  >= 0.3.4    && < 0.4
 
 source-repository head
   type:     git
