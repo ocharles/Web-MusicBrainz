@@ -9,24 +9,24 @@ import Audio.MusicBrainz.Types
 import Audio.MusicBrainz.XML
 
 specs ::  IO [IO Spec]
-specs = descriptions [parseArtist_full, parseArtist_min]
+specs = descriptions [fromXML_artist_full, fromXML_artist_min]
 
-parseArtist_full :: IO [IO Spec]
-parseArtist_full = do actual <- parseArtist . firstArtist =<< readFixture "artist_full.xml"
-                      describe 
-                        "full Artist profile" 
-                        [ it "parses the full artist" $ actual == fullArtist ]
+fromXML_artist_full :: IO [IO Spec]
+fromXML_artist_full = do actual <- fromXML . firstArtist =<< readFixture "artist_full.xml"
+                         describe 
+                           "full Artist profile" 
+                           [ it "parses the full artist" $ actual == fullArtist ]
 
-parseArtist_min :: IO [IO Spec]
-parseArtist_min = do actual <- parseArtist . firstArtist =<< readFixture "artist_min.xml"
-                     describe 
-                       "minimal Artist profile" 
-                       [ it "parses the minimal artist" $ actual == minimalArtist ]
+fromXML_artist_min :: IO [IO Spec]
+fromXML_artist_min = do actual <- fromXML . firstArtist =<< readFixture "artist_min.xml"
+                        describe 
+                          "minimal Artist profile" 
+                          [ it "parses the minimal artist" $ actual == minimalArtist ]
 
 ---- Helpers
 
 firstArtist :: Cursor -> Cursor
-firstArtist root = head $ root !<//.> ["artist-list", "artist"]
+firstArtist root = head $ root <//.> ["artist-list", "artist"]
 
 ---- Data Fixtures
 

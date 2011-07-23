@@ -19,13 +19,16 @@ module Audio.MusicBrainz.Types (Artist(..),
                                 UserRating(..),
                                 Recording(..),
                                 Release(..),
+                                Relation(..),
+                                RelationList(..),
                                 ReleaseGroup(..),
                                 Work(..),
                                 Quality(..),
                                 Tag(..),
                                 LifeSpan(..),
                                 NameCredit(..),
-                                Asin(..),
+                                ASIN(..),
+                                MBID(..),
                                 TextRepresentation(..),
                                 Identifier(..)
                                 ) where
@@ -52,7 +55,7 @@ data Artist = Artist { artistId             :: Text,
                        artistReleases       :: [Release],
                        artistLabels         :: [Label],
                        artistWorks          :: [Work],
-                       artistRelationLists  :: [[Relation]], -- Iffy
+                       artistRelationLists  :: [RelationList],
                        artistRating         :: Maybe Rating,
                        artistUserRating     :: Maybe UserRating,
                        artistTags           :: [Tag] } deriving (Show, Eq)
@@ -66,7 +69,7 @@ data Recording = Recording { recordingId             :: Text,
                              recordingArtistCredit   :: [NameCredit],
                              recordingReleases       :: [Release],
                              recordingIdentifiers    :: [Identifier],
-                             recordingRelationLists  :: [[Relation]], -- Iffy
+                             recordingRelationLists  :: [RelationList],
                              recordingTags           :: [Tag],
                              recordingRating         :: Maybe Rating,
                              recordingUserRating     :: Maybe UserRating } deriving (Show, Eq)
@@ -83,10 +86,10 @@ data Release = Release { releaseId :: Text,
                          releaseDate :: Maybe PartialDate,
                          releaseCountry :: Maybe CountryCode,
                          releaseBarcode :: Maybe Text,
-                         releaseAsin :: Maybe Asin,
+                         releaseASIN :: Maybe ASIN,
                          --TODO: label info
                          --TODO: medium info
-                         relationLists :: [[Relation]] } deriving (Show, Eq)
+                         relationLists :: [RelationList] } deriving (Show, Eq)
 
 data ReleaseGroup = ReleaseGroup deriving (Show, Eq)
 
@@ -109,7 +112,40 @@ data UserRating = UserRating { userRatingVotes :: Int,
 
 data Quality = Low | Normal | High deriving (Show, Eq)
 
-data Relation = Relation deriving (Show, Eq)
+data Direction = Both | Forward | Backward deriving (Show, Eq)
+
+type RelationList = [Relation]
+
+data Relation = ArtistRelation { relationType      :: Text,
+                                 relationTarget    :: MBID,
+                                 relationLifeSpan  :: LifeSpan,
+                                 relationDirection :: Maybe Direction,
+                                 relationArtist    :: Artist } |
+                ReleaseRelation { relationType      :: Text,
+                                  relationTarget    :: MBID,
+                                  relationLifeSpan  :: LifeSpan,
+                                  relationDirection :: Maybe Direction,
+                                  relationRelease   :: Release } |
+                ReleaseGroupRelation { relationType         :: Text,
+                                       relationTarget       :: MBID,
+                                       relationLifeSpan     :: LifeSpan,
+                                       relationDirection    :: Maybe Direction,
+                                       relationReleaseGroup :: ReleaseGroup } |
+                RecordingRelation { relationType      :: Text,
+                                    relationTarget    :: MBID,
+                                    relationLifeSpan  :: LifeSpan,
+                                    relationDirection :: Maybe Direction,
+                                    relationRecording :: Recording } |
+                LabelRelation { relationType      :: Text,
+                                relationTarget    :: MBID,
+                                relationLifeSpan  :: LifeSpan,
+                                relationDirection :: Maybe Direction,
+                                relationLabel   :: Label } |
+                WorkRelation { relationType       :: Text,
+                               relationTarget    :: MBID,
+                               relationLifeSpan  :: LifeSpan,
+                               relationDirection :: Maybe Direction,
+                               relationWork   :: Work } deriving (Show, Eq) --TODO: verify artist is guaranteeed
 
 data Tag = Tag { tagName :: Text } | 
            UserTag { tagName :: Text } deriving (Show, Eq)
@@ -120,5 +156,6 @@ data Identifier = DiscID Text |
                   PUID Text |
                   ISRC Text |
                   ISWC Text deriving (Show, Eq)
+data MBID = MBID Text deriving (Show, Eq)
 
-data Asin = Asin Text deriving (Show, Eq)
+data ASIN = ASIN Text deriving (Show, Eq)
