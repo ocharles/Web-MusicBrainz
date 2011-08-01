@@ -43,7 +43,7 @@ data PartialDate = PartialDate Int (Maybe Int) (Maybe Int) deriving (Show, Eq)
 -- the rng/talking to the devs revealed that artists, recordings, releases, release-groups, works can only be guaranteed to have a name/title and id, everything else is optional and cannot be relied upon
 --TODO: most of these should be mabe
 data Artist = Artist { artistId             :: Text,
-                       artistType           :: Text,
+                       artistType           :: Maybe Text,
                        artistName           :: Text,
                        artistAliases        :: [Text],
                        artistSortName       :: Maybe Text,
@@ -86,26 +86,36 @@ data Recording = Recording { recordingId             :: Text,
                              recordingRating         :: Maybe Rating,
                              recordingUserRating     :: Maybe UserRating } deriving (Show, Eq)
 
-data Release = Release { releaseId :: Text,
-                         releaseTitle :: Text,
-                         releaseStatus :: Maybe Text,
-                         releaseQuality :: Maybe Quality,
-                         releaseDisambiguation :: Maybe Text,
-                         releasePackaging :: Maybe Text,
+data Release = Release { releaseId                 :: Text,
+                         releaseTitle              :: Text,
+                         releaseStatus             :: Maybe Text,
+                         releaseQuality            :: Maybe Quality,
+                         releaseDisambiguation     :: Maybe Text,
+                         releasePackaging          :: Maybe Text,
                          releaseTextRepresentation :: Maybe TextRepresentation, -- language, script
-                         releaseArtistCredit :: [NameCredit],
+                         releaseArtistCredit       :: [NameCredit],
                          --TODO: releaseGroup
-                         releaseDate :: Maybe PartialDate,
-                         releaseCountry :: Maybe CountryCode,
-                         releaseBarcode :: Maybe Text,
-                         releaseASIN :: Maybe ASIN,
+                         releaseDate               :: Maybe PartialDate,
+                         releaseCountry            :: Maybe CountryCode,
+                         releaseBarcode            :: Maybe Text,
+                         releaseASIN               :: Maybe ASIN,
                          --TODO: label info
                          --TODO: medium info
-                         relationLists :: [RelationList] } deriving (Show, Eq)
+                         relationLists             :: [RelationList] } deriving (Show, Eq)
 
 data ReleaseGroup = ReleaseGroup deriving (Show, Eq)
 
-data Work = Work deriving (Show, Eq)
+data Work = Work { workId             :: Text,
+                   workType           :: Maybe Text,
+                   workTitle          :: Text,
+                   workArtistCredit   :: [NameCredit],
+                   workISWC           :: Maybe Identifier,
+                   workDisambiguation :: Maybe Text,
+                   workAliases        :: [Text],
+                   workRelationLists  :: [RelationList],
+                   workTags           :: [Tag],
+                   workRating         :: Maybe Rating,
+                   workUserRating     :: Maybe Rating } deriving (Show, Eq)
 
 ---- Non-Core Resources
 data NameCredit = NameCredit { nameCreditJoinPhrase :: Maybe Text,
