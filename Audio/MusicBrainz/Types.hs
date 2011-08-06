@@ -69,7 +69,7 @@ data Label = Label { labelId             :: Text,
                      labelCountry        :: Maybe CountryCode,
                      labelLifeSpan       :: Maybe LifeSpan,
                      labelAliases        :: [Text],
-                     labelRelations      :: [Relation],
+                     labelRelationLists  :: [RelationList],
                      labelTags           :: [Tag],
                      labelRating         :: Maybe Rating,
                      labelUserRating     :: Maybe UserRating } deriving (Show, Eq)
