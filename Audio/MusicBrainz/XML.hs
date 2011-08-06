@@ -233,7 +233,10 @@ el ?<.> n = listToMaybe $ el $/ laxElement n
 (!<.>) :: (F.Failure XmlException m) => Cu.Cursor -> T.Text -> m Cu.Cursor
 el !<.> n = forceEx ("missing " ++ T.unpack n) $ el $/ laxElement n
 
-(!<=>) :: (F.Failure XmlException m, FromXML a) => Cu.Cursor -> T.Text -> m a
+(!<=>) :: (F.Failure XmlException m, Applicative m, FromXML a)
+          => Cu.Cursor 
+          -> T.Text 
+          -> m a
 el !<=> n = fromXML =<< el !<.> n
 
 (?<=>) :: (FromXML a) => Cu.Cursor -> T.Text -> Maybe a
