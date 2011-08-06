@@ -15,6 +15,7 @@
 module Audio.MusicBrainz.Types (Artist(..),
                                 PartialDate(..),
                                 Label(..),
+                                Direction(..),
                                 Rating(..),
                                 UserRating(..),
                                 Recording(..),
@@ -41,7 +42,8 @@ data PartialDate = PartialDate Int (Maybe Int) (Maybe Int) deriving (Show, Eq)
 
 ---- Core Resources
 -- the rng/talking to the devs revealed that artists, recordings, releases, release-groups, works can only be guaranteed to have a name/title and id, everything else is optional and cannot be relied upon
---TODO: most of these should be mabe
+--TODO: i think IDs are MBIDs. may have to switch that over
+
 data Artist = Artist { artistId             :: Text,
                        artistType           :: Maybe Text,
                        artistName           :: Text,
@@ -94,7 +96,7 @@ data Release = Release { releaseId                 :: Text,
                          releasePackaging          :: Maybe Text,
                          releaseTextRepresentation :: Maybe TextRepresentation, -- language, script
                          releaseArtistCredit       :: [NameCredit],
-                         --TODO: releaseGroup
+                         releaseReleaseGroup       :: Maybe ReleaseGroup,
                          releaseDate               :: Maybe PartialDate,
                          releaseCountry            :: Maybe CountryCode,
                          releaseBarcode            :: Maybe Text,
@@ -103,7 +105,18 @@ data Release = Release { releaseId                 :: Text,
                          --TODO: medium info
                          relationLists             :: [RelationList] } deriving (Show, Eq)
 
-data ReleaseGroup = ReleaseGroup deriving (Show, Eq)
+data ReleaseGroup = ReleaseGroup { releaseGroupId               :: Text,
+                                   releaseGroupType             :: Maybe Text,
+                                   releaseGroupTitle            :: Text,
+                                   releaseGroupDisambiguation   :: Maybe Text,
+                                   releaseGroupComment          :: Maybe Text,
+                                   releaseGroupFirstReleaseDate :: Maybe PartialDate,
+                                   releaseGroupArtistCredit     :: [NameCredit],
+                                   releaseGroupReleases         :: [Release],
+                                   releaseGroupRelationLists    :: [RelationList],
+                                   releaseGroupTags             :: [Tag],
+                                   releaseGroupRating           :: Maybe Rating,
+                                   releaseGroupUserRating       :: Maybe UserRating } deriving (Show, Eq)
 
 data Work = Work { workId             :: Text,
                    workType           :: Maybe Text,
@@ -162,12 +175,12 @@ data Relation = ArtistRelation { relationType      :: Text,
                                 relationTarget    :: MBID,
                                 relationLifeSpan  :: LifeSpan,
                                 relationDirection :: Maybe Direction,
-                                relationLabel   :: Label } |
-                WorkRelation { relationType       :: Text,
+                                relationLabel     :: Label } |
+                WorkRelation { relationType      :: Text,
                                relationTarget    :: MBID,
                                relationLifeSpan  :: LifeSpan,
                                relationDirection :: Maybe Direction,
-                               relationWork   :: Work } deriving (Show, Eq) --TODO: verify artist is guaranteeed
+                               relationWork      :: Work } deriving (Show, Eq) --TODO: verify artist is guaranteeed
 
 data Tag = Tag { tagName :: Text } | 
            UserTag { tagName :: Text } deriving (Show, Eq)

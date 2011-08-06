@@ -107,19 +107,34 @@ instance FromXML NameCredit where
                           <*>         el !<|> "name"
 
 instance FromXML Release where
-  fromXML el = Release <$>                                  el !<@> "id"
-                       <*>                                  el !<|> "title"
-                       <*> (pure $                          el ?<|> "status")
-                       <*> (pure $                          el ?<=> "quality")
-                       <*> (pure $                          el ?<|> "disambiguation")
-                       <*> (pure $                          el ?<|> "packaging")
-                       <*> (pure $ listToMaybe =<<          el <//=> ["text-representation"])
-                       <*>                                  el <//=> ["artist-credit", "name-credit"]
-                       <*> (pure $ parseDate =<<            el ?<|> "date")
-                       <*> (pure $ (read . T.unpack) <$>    el ?<|> "country")
-                       <*> (pure $                          el ?<|> "barcode")
-                       <*> (pure $ ASIN <$>                 el ?<|> "asin")
-                       <*> (mapM parseRelationList $        el <//.> ["relation-list"])
+  fromXML el = Release <$>                               el !<@> "id"
+                       <*>                               el !<|> "title"
+                       <*> (pure $                       el ?<|> "status")
+                       <*> (pure $                       el ?<=> "quality")
+                       <*> (pure $                       el ?<|> "disambiguation")
+                       <*> (pure $                       el ?<|> "packaging")
+                       <*> (pure $ listToMaybe =<<       el <//=> ["text-representation"])
+                       <*>                               el <//=> ["artist-credit", "name-credit"]
+                       <*> (pure $ listToMaybe =<<       el <//=> ["release-group"])
+                       <*> (pure $ parseDate =<<         el ?<|> "date")
+                       <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                       <*> (pure $                       el ?<|> "barcode")
+                       <*> (pure $ ASIN <$>              el ?<|> "asin")
+                       <*> (mapM parseRelationList $     el <//.> ["relation-list"])
+
+instance FromXML ReleaseGroup where
+  fromXML el = ReleaseGroup <$>                           el !<@> "id"
+                            <*> (pure $                   el ?<@> "type")
+                            <*>                           el !<|> "title"
+                            <*> (pure $                   el ?<|> "disambiguation")
+                            <*> (pure $                   el ?<|> "comment")
+                            <*> (pure $ parseDate =<<     el ?<|> "release-date")
+                            <*>                           el <//=> ["artist-credit", "name-credit"]
+                            <*>                           el <//=> ["release-list", "release"]
+                            <*> (mapM parseRelationList $ el <//.> ["relation-list"])
+                            <*> (pure $                   parseUserTags el ++ parseUserTags el)
+                            <*> (pure $ listToMaybe =<<   el <//=> ["rating"])
+                            <*> (pure $ listToMaybe =<<   el <//=> ["user-rating"])
 
 instance FromXML Quality where
   fromXML el = readQuality . T.unpack =<< el !<|> "value"
@@ -127,6 +142,13 @@ instance FromXML Quality where
           readQuality "normal" = return Normal
           readQuality "low"    = return Low
           readQuality q        = fail $ "Unexpected quality " ++ q
+
+instance FromXML Direction where
+  fromXML el = readDirection . T.unpack =<< el !<|> "value"
+    where readDirection "both"     = return Both
+          readDirection "forward"  = return Forward
+          readDirection "backward" = return Backward
+          readDirection d          = fail $ "Unexpected direction " ++ d
 
 instance FromXML Rating where
   fromXML el = (return . uncurry) Rating `ap` parseRating' el
@@ -140,10 +162,12 @@ instance FromXML TextRepresentation where
           script   = el ?<|> "script"
 
 ---- Helpers
-parseRelationList el = do tt   <- el !<@> "target-type"
+parseRelationList :: (Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> m RelationList
+parseRelationList el = do tt <- el !<@> "target-type"
                           mapM (parseRelation $ T.unpack tt) rels
   where rels = el <//.> ["relation"]
 
+parseRelation :: (Functor m, Applicative m, F.Failure XmlException m) => String -> Cu.Cursor -> m Relation
 parseRelation "artist"        el = parseArtistRelation el
 parseRelation "release"       el = parseReleaseRelation el
 parseRelation "release-group" el = parseReleaseGroupRelation el
@@ -152,16 +176,21 @@ parseRelation "label"         el = parseLabelRelation el
 parseRelation "work"          el = parseWorkRelation el
 parseRelation t               el = fail $ "Unexpected target-type " ++ t
 
---parseRelation' :: (Functor m, Applicative m,  F.Failure XmlException m, FromXML a) => Cu.Cursor -> Text -> m Relation
+parseRelation' :: (Functor m, Applicative m, F.Failure XmlException m, FromXML a)
+                  => (T.Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relation)
+                  -> Cu.Cursor
+                  -> T.Text
+                  -> m Relation
 parseRelation' con el n = con <$> el !<|> "type"
                               <*> (el !<=> "target")
                               <*> fromXML el
-                              <*> el ?<=> "direction"
+                              <*> (pure $ el ?<=> "direction")
                               <*> el !<=> n
 
 
 parseArtistRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
 parseArtistRelation el = parseRelation' ArtistRelation el "artist"
+
 
 parseReleaseRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
 parseReleaseRelation el = parseRelation' ReleaseRelation el "release"
