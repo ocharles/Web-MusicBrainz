@@ -33,7 +33,7 @@ firstArtist root = head $ root <//.> ["artist-list", "artist"]
 fullArtist :: Artist
 fullArtist = Artist { artistId             = "aaaaaa-aaaa-aaaa-aaaa-aaaaaaa",
                       artistName           = "Dr. Funke's 100% Natural Good-Time Family-Band Solution",
-                      artistType           = "group",
+                      artistType           = Just "group",
                       artistSortName       = Just "Dr. Funke's 100% Natural Good-Time Family-Band Solution",
                       artistLifeSpan       = (Just pd1, Just pd2),
                       artistAliases        = ["The Funke Bunch", "The Teamocil Band"],
@@ -56,7 +56,7 @@ fullArtist = Artist { artistId             = "aaaaaa-aaaa-aaaa-aaaa-aaaaaaa",
 minimalArtist :: Artist
 minimalArtist = Artist { artistId             = "aaaaaa-aaaa-aaaa-aaaa-aaaaaaa",
                          artistName           = "Dr. Funke's 100% Natural Good-Time Family-Band Solution",
-                         artistType           = "group",
+                         artistType           = Just "group",
                          artistSortName       = Nothing,
                          artistLifeSpan       = (Nothing, Nothing),
                          artistAliases        = [],
