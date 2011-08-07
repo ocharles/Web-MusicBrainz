@@ -10,8 +10,8 @@
 -- Portability: portable
 --
 --------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-module Audio.MusicBrainz.Monad (MusicBrainzEnv(..)) where
+{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+module Audio.MusicBrainz.Monad (MusicBrainzEnv(..), MusicBrainzM(..)) where
 
 import Data.Text (Text)
 import Control.Monad.Reader
@@ -21,3 +21,7 @@ data MusicBrainzEnv = MusicBrainzEnv { mbClient   :: Text, -- ^ Name of the clie
                                        mbUsername :: Maybe Text, -- ^ Username required only for POSTing data
                                        mbPassword :: Maybe Text  -- ^ Password required only for POSTing data
                                       }
+
+-- |IO wrapper used to chain and compose MusicBrainz API actions
+newtype MusicBrainzM a = MusicBrainzM {unMusicBrainzM :: ReaderT MusicBrainzEnv IO a} 
+  deriving (Monad, MonadIO, MonadReader MusicBrainzEnv)
