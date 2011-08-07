@@ -9,7 +9,7 @@ import           Data.Typeable
 import           Data.XML.Types
 import qualified Control.Failure            as F
 import           Text.XML.Enumerator.Resolved (Name(..))
-import qualified Data.Text as T
+import           Data.Text (Text, unpack)
 import           Text.XML.Enumerator.Cursor
 import qualified Text.XML.Enumerator.Cursor as Cu
 import           Text.XML.Enumerator.Resolved
@@ -34,7 +34,7 @@ instance FromXML Artist where
                       <*> (pure $                       el !<//|> ["alias-list", "alias"])
                       <*> (pure $                       el ?<|> "sort-name")
                       <*> (parseLifeSpan $              el ?<.> "life-span")
-                      <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                      <*> (pure $ (read . unpack) <$> el ?<|> "country")
                       <*> (pure $                       el ?<|> "gender")
                       <*> (pure $                       el ?<|> "disambiguation")
                       <*>                               el <//=> ["recording-list", "recording"]
@@ -64,9 +64,9 @@ instance FromXML Label where
                      <*> (pure $                       el ?<@> "type")
                      <*>                               el !<|> "name"
                      <*> (pure $                       el ?<|> "sort-name")
-                     <*> (pure $ (read . T.unpack) <$> el ?<|> "label-code")
+                     <*> (pure $ (read . unpack) <$> el ?<|> "label-code")
                      <*> (pure $                       el ?<|> "disambiguation")
-                     <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                     <*> (pure $ (read . unpack) <$> el ?<|> "country")
                      <*> (pure $ parseLifeSpan $       el ?<.> "life-span")
                      <*> (pure $                       el !<//|> ["alias-list", "alias"])
                      <*>                               el <//=> ["relation-list"]
@@ -84,12 +84,12 @@ instance FromXML LifeSpan where
   fromXML el = return (pDate <$> fromEl "begin", pDate <$> fromEl "end")
     where pDate txt               = (finalize . pad 3) $ splitOn "-" txt
           finalize (Just a:b:c:_) = PartialDate (read a) (read <$> b) (read <$> c)
-          fromEl n                = T.unpack <$> el ?<|> n
+          fromEl n                = unpack <$> el ?<|> n
 
 instance FromXML Recording where
   fromXML el = Recording <$>                                 el !<@> "id"
                          <*>                                 el !<|> "title"
-                         <*> (pure $ (read . T.unpack) <$>   el ?<|> "length")
+                         <*> (pure $ (read . unpack) <$>   el ?<|> "length")
                          <*> (pure $                         el ?<|> "disambiguation")
                          <*>                                 el <//=> ["artist-credit", "name-credit"]
                          <*>                                 el <//=> ["release-list", "release"]
@@ -117,7 +117,7 @@ instance FromXML Release where
                        <*>                               el <//=> ["artist-credit", "name-credit"]
                        <*> (pure $ listToMaybe =<<       el <//=> ["release-group"])
                        <*> (pure $ parseDate =<<         el ?<|> "date")
-                       <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
+                       <*> (pure $ (read . unpack) <$> el ?<|> "country")
                        <*> (pure $                       el ?<|> "barcode")
                        <*> (pure $ ASIN <$>              el ?<|> "asin")
                        <*> (mapM parseRelationList $     el <//.> ["relation-list"])
@@ -137,14 +137,14 @@ instance FromXML ReleaseGroup where
                             <*> (pure $ listToMaybe =<<   el <//=> ["user-rating"])
 
 instance FromXML Quality where
-  fromXML el = readQuality . T.unpack =<< el !<|> "value"
+  fromXML el = readQuality . unpack =<< el !<|> "value"
     where readQuality "high"   = return High
           readQuality "normal" = return Normal
           readQuality "low"    = return Low
           readQuality q        = fail $ "Unexpected quality " ++ q
 
 instance FromXML Direction where
-  fromXML el = readDirection . T.unpack =<< el !<|> "value"
+  fromXML el = readDirection . unpack =<< el !<|> "value"
     where readDirection "both"     = return Both
           readDirection "forward"  = return Forward
           readDirection "backward" = return Backward
@@ -164,7 +164,7 @@ instance FromXML TextRepresentation where
 ---- Helpers
 parseRelationList :: (Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> m RelationList
 parseRelationList el = do tt <- el !<@> "target-type"
-                          mapM (parseRelation $ T.unpack tt) rels
+                          mapM (parseRelation $ unpack tt) rels
   where rels = el <//.> ["relation"]
 
 parseRelation :: (Functor m, Applicative m, F.Failure XmlException m) => String -> Cu.Cursor -> m Relation
@@ -177,9 +177,9 @@ parseRelation "work"          el = parseWorkRelation el
 parseRelation t               el = fail $ "Unexpected target-type " ++ t
 
 parseRelation' :: (Functor m, Applicative m, F.Failure XmlException m, FromXML a)
-                  => (T.Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relation)
+                  => (Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relation)
                   -> Cu.Cursor
-                  -> T.Text
+                  -> Text
                   -> m Relation
 parseRelation' con el n = con <$> el !<|> "type"
                               <*> (el !<=> "target")
@@ -208,49 +208,49 @@ parseWorkRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu
 parseWorkRelation el = parseRelation' WorkRelation el "work"
 
 -- Get attribute of cursor
-(!<@>) :: F.Failure XmlException m => Cu.Cursor -> T.Text -> m T.Text
-el !<@> n = forceEx ("missing " ++ T.unpack n) $ el $| laxAttribute n
+(!<@>) :: F.Failure XmlException m => Cu.Cursor -> Text -> m Text
+el !<@> n = forceEx ("missing " ++ unpack n) $ el $| laxAttribute n
 
-(?<@>) :: Cu.Cursor -> T.Text -> Maybe T.Text
+(?<@>) :: Cu.Cursor -> Text -> Maybe Text
 el ?<@> n =  listToMaybe $ el $| laxAttribute n
 
 -- Shorthand to get content of named tag
-(!<|>) :: F.Failure XmlException m => Cu.Cursor -> T.Text -> m T.Text
-el !<|> n = forceEx ("missing " ++ T.unpack n) $ el $/ (cont <=< laxElement n)
+(!<|>) :: F.Failure XmlException m => Cu.Cursor -> Text -> m Text
+el !<|> n = forceEx ("missing " ++ unpack n) $ el $/ (cont <=< laxElement n)
 
 -- Get content from the current element (custom unary not allowed)
-cont :: F.Failure XmlException m => Cu.Cursor -> m T.Text
+cont :: F.Failure XmlException m => Cu.Cursor -> m Text
 cont el = forceEx "no content" $ el $/ content
 
 -- (Maybe) get content
-(?<|>) :: Cu.Cursor -> T.Text -> Maybe T.Text
+(?<|>) :: Cu.Cursor -> Text -> Maybe Text
 el ?<|> n = listToMaybe $ el $/ (laxElement n &/ content)
 
 -- (Maybe) find a node
-(?<.>) :: Cu.Cursor -> T.Text -> Maybe Cursor
+(?<.>) :: Cu.Cursor -> Text -> Maybe Cursor
 el ?<.> n = listToMaybe $ el $/ laxElement n
 
-(!<.>) :: (F.Failure XmlException m) => Cu.Cursor -> T.Text -> m Cu.Cursor
-el !<.> n = forceEx ("missing " ++ T.unpack n) $ el $/ laxElement n
+(!<.>) :: (F.Failure XmlException m) => Cu.Cursor -> Text -> m Cu.Cursor
+el !<.> n = forceEx ("missing " ++ unpack n) $ el $/ laxElement n
 
 (!<=>) :: (F.Failure XmlException m, Applicative m, FromXML a)
           => Cu.Cursor 
-          -> T.Text 
+          -> Text 
           -> m a
 el !<=> n = fromXML =<< el !<.> n
 
-(?<=>) :: (FromXML a) => Cu.Cursor -> T.Text -> Maybe a
+(?<=>) :: (FromXML a) => Cu.Cursor -> Text -> Maybe a
 el ?<=> n = fromXML =<< el ?<.> n
 
 --REFACTOR: ! is inaccurate. It returns an array so there is no opportunity for failure
 -- Find leaf nodes given list of paths to walk down
-(<//.>) :: Cu.Cursor -> [T.Text] -> [Cu.Cursor]
+(<//.>) :: Cu.Cursor -> [Text] -> [Cu.Cursor]
 el <//.> path = el $/ (foldl1 (&/) $ map laxElement path)
 
-(<//=>) :: (FromXML a, Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> [T.Text] -> m [a]
+(<//=>) :: (FromXML a, Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> [Text] -> m [a]
 el <//=> path = mapM fromXML $ el <//.> path
 
-(!<//|>) :: Cu.Cursor -> [T.Text] -> [T.Text]
+(!<//|>) :: Cu.Cursor -> [Text] -> [Text]
 el !<//|> path = concatMap ($/ content) $ el <//.> path
 
 forceEx :: F.Failure XmlException m => String -> [a] -> m a
@@ -271,8 +271,8 @@ parseLifeSpan (Just el) = fromXML el
 --TODO: refactor
 parseRating' :: F.Failure XmlException m => Cu.Cursor -> m (Int, Float)
 parseRating' el = do count <- el !<@> "votes-count"
-                     let val = read . T.unpack . head $ el $/ content
-                     return ((read . T.unpack) count, val)
+                     let val = read . unpack . head $ el $/ content
+                     return ((read . unpack) count, val)
 
 parseUserTags :: Cu.Cursor -> [Tag]
 parseUserTags el = UserTag <$> el !<//|> ["user-tag-list", "user-tag", "name"]
@@ -284,8 +284,8 @@ pad :: Int -> [a] -> [Maybe a]
 pad n xs = (Just <$> xs') ++ replicate (n - length xs) Nothing
   where xs' = take n xs
 
-toI :: (Monad m) => m T.Text -> m Int
-toI = liftM (read . T.unpack)
+toI :: (Monad m) => m Text -> m Int
+toI = liftM (read . unpack)
 
-toF :: (Monad m) => m T.Text -> m Float
-toF = liftM (read . T.unpack)
+toF :: (Monad m) => m Text -> m Float
+toF = liftM (read . unpack)
