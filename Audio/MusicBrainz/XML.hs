@@ -1,29 +1,49 @@
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, TypeSynonymInstances #-}
-module Audio.MusicBrainz.XML (fromXML,
-                              (<//.>)
-                              ) where
+module Audio.MusicBrainz.XML (fromXMLLBS,
+                              readXMLLBS,
+                              fromXMLFile,
+                              readXMLFile) where
 
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import           Data.List.Split (splitOn)
 import           Data.Maybe (listToMaybe)
 import           Data.Typeable
 import           Data.XML.Types
 import qualified Control.Failure            as F
-import           Text.XML.Enumerator.Resolved (Name(..))
+import           Text.XML.Enumerator.Resolved (Name(..), readFile_, parseLBS_)
 import           Data.Text (Text, unpack)
 import           Text.XML.Enumerator.Cursor
-import qualified Text.XML.Enumerator.Cursor as Cu
+import           Text.XML.Enumerator.Parse (decodeEntities)
 import           Text.XML.Enumerator.Resolved
-import qualified Control.Exception            as C
+import qualified Control.Exception          as C
 
 import Control.Applicative
 import Control.Monad
 import Data.Monoid
 
 import Audio.MusicBrainz.Types
+import Audio.MusicBrainz.XML.FromXML
 
--- FromXML inspired by Aeson's FromJSON typeclass
-class FromXML a where
-  fromXML :: (Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> m a
+fromXMLLBS :: (Functor m, 
+               Applicative m,
+               F.Failure XmlException m,
+               FromXML a)
+              => LBS.ByteString
+              -> [Text]
+              -> m a
+fromXMLLBS lbs nodes = readXMLLBS lbs <//=> nodes
+
+
+fromXMLFile :: (FromXML a) => FilePath -> [Text] -> IO a
+fromXMLFile path nodes = do root <- readXMLFile path 
+                            return $ root <//=> nodes
+
+readXMLFile :: FilePath -> IO Cursor
+readXMLFile path = fromDocument `fmap` readFile_ path decodeEntities
+
+-- TODO: the Either version may be preferable, if the server generates invalid XML
+readXMLLBS :: LBS.ByteString -> Cursor
+readXMLLBS path = fromDocument $ parseLBS_ path decodeEntities
 
 ---- Instances
 
@@ -162,12 +182,12 @@ instance FromXML TextRepresentation where
           script   = el ?<|> "script"
 
 ---- Helpers
-parseRelationList :: (Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> m RelationList
+parseRelationList :: (Functor m, Applicative m, F.Failure XmlException m) => Cursor -> m RelationList
 parseRelationList el = do tt <- el !<@> "target-type"
                           mapM (parseRelation $ unpack tt) rels
   where rels = el <//.> ["relation"]
 
-parseRelation :: (Functor m, Applicative m, F.Failure XmlException m) => String -> Cu.Cursor -> m Relation
+parseRelation :: (Functor m, Applicative m, F.Failure XmlException m) => String -> Cursor -> m Relation
 parseRelation "artist"        el = parseArtistRelation el
 parseRelation "release"       el = parseReleaseRelation el
 parseRelation "release-group" el = parseReleaseGroupRelation el
@@ -178,7 +198,7 @@ parseRelation t               el = fail $ "Unexpected target-type " ++ t
 
 parseRelation' :: (Functor m, Applicative m, F.Failure XmlException m, FromXML a)
                   => (Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relation)
-                  -> Cu.Cursor
+                  -> Cursor
                   -> Text
                   -> m Relation
 parseRelation' con el n = con <$> el !<|> "type"
@@ -188,96 +208,42 @@ parseRelation' con el n = con <$> el !<|> "type"
                               <*> el !<=> n
 
 
-parseArtistRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseArtistRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseArtistRelation el = parseRelation' ArtistRelation el "artist"
 
 
-parseReleaseRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseReleaseRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseReleaseRelation el = parseRelation' ReleaseRelation el "release"
 
-parseReleaseGroupRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseReleaseGroupRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseReleaseGroupRelation el = parseRelation' ReleaseGroupRelation el "release-group"
 
-parseRecordingRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseRecordingRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseRecordingRelation el = parseRelation' RecordingRelation el "recording"
 
-parseLabelRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseLabelRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseLabelRelation el = parseRelation' LabelRelation el "label"
 
-parseWorkRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cu.Cursor -> m Relation
+parseWorkRelation :: (Functor m, Applicative m,  F.Failure XmlException m) => Cursor -> m Relation
 parseWorkRelation el = parseRelation' WorkRelation el "work"
-
--- Get attribute of cursor
-(!<@>) :: F.Failure XmlException m => Cu.Cursor -> Text -> m Text
-el !<@> n = forceEx ("missing " ++ unpack n) $ el $| laxAttribute n
-
-(?<@>) :: Cu.Cursor -> Text -> Maybe Text
-el ?<@> n =  listToMaybe $ el $| laxAttribute n
-
--- Shorthand to get content of named tag
-(!<|>) :: F.Failure XmlException m => Cu.Cursor -> Text -> m Text
-el !<|> n = forceEx ("missing " ++ unpack n) $ el $/ (cont <=< laxElement n)
-
--- Get content from the current element (custom unary not allowed)
-cont :: F.Failure XmlException m => Cu.Cursor -> m Text
-cont el = forceEx "no content" $ el $/ content
-
--- (Maybe) get content
-(?<|>) :: Cu.Cursor -> Text -> Maybe Text
-el ?<|> n = listToMaybe $ el $/ (laxElement n &/ content)
-
--- (Maybe) find a node
-(?<.>) :: Cu.Cursor -> Text -> Maybe Cursor
-el ?<.> n = listToMaybe $ el $/ laxElement n
-
-(!<.>) :: (F.Failure XmlException m) => Cu.Cursor -> Text -> m Cu.Cursor
-el !<.> n = forceEx ("missing " ++ unpack n) $ el $/ laxElement n
-
-(!<=>) :: (F.Failure XmlException m, Applicative m, FromXML a)
-          => Cu.Cursor 
-          -> Text 
-          -> m a
-el !<=> n = fromXML =<< el !<.> n
-
-(?<=>) :: (FromXML a) => Cu.Cursor -> Text -> Maybe a
-el ?<=> n = fromXML =<< el ?<.> n
-
---REFACTOR: ! is inaccurate. It returns an array so there is no opportunity for failure
--- Find leaf nodes given list of paths to walk down
-(<//.>) :: Cu.Cursor -> [Text] -> [Cu.Cursor]
-el <//.> path = el $/ (foldl1 (&/) $ map laxElement path)
-
-(<//=>) :: (FromXML a, Functor m, Applicative m, F.Failure XmlException m) => Cu.Cursor -> [Text] -> m [a]
-el <//=> path = mapM fromXML $ el <//.> path
-
-(!<//|>) :: Cu.Cursor -> [Text] -> [Text]
-el !<//|> path = concatMap ($/ content) $ el <//.> path
-
-forceEx :: F.Failure XmlException m => String -> [a] -> m a
-forceEx = Cu.force . XmlException
-
-newtype XmlException = XmlException { xmlErrorMessage :: String }
-    deriving (Show, Typeable)
-
-instance C.Exception XmlException
 
 --TODO: refactor
 parseDate = undefined --TODO
 
-parseLifeSpan :: (Functor m, Applicative m,  F.Failure XmlException m) => Maybe Cu.Cursor -> m LifeSpan
+parseLifeSpan :: (Functor m, Applicative m,  F.Failure XmlException m) => Maybe Cursor -> m LifeSpan
 parseLifeSpan Nothing   = return (Nothing, Nothing)
 parseLifeSpan (Just el) = fromXML el
 
 --TODO: refactor
-parseRating' :: F.Failure XmlException m => Cu.Cursor -> m (Int, Float)
+parseRating' :: F.Failure XmlException m => Cursor -> m (Int, Float)
 parseRating' el = do count <- el !<@> "votes-count"
                      let val = read . unpack . head $ el $/ content
                      return ((read . unpack) count, val)
 
-parseUserTags :: Cu.Cursor -> [Tag]
+parseUserTags :: Cursor -> [Tag]
 parseUserTags el = UserTag <$> el !<//|> ["user-tag-list", "user-tag", "name"]
 
-parseTags :: Cu.Cursor -> [Tag]
+parseTags :: Cursor -> [Tag]
 parseTags el = Tag <$> el !<//|> ["tag-list", "tag", "name"]
 
 pad :: Int -> [a] -> [Maybe a]
