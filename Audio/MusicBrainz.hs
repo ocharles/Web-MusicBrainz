@@ -45,8 +45,7 @@ version = "0.0.0"
 getArtistByMBID :: MBID -> MusicBrainzM (Maybe Artist)
 getArtistByMBID (MBID mbid) = withReadEnv $ \client -> do
   resp <- doGet client pth []
-  artist <- maybeParse resp ["metadata", "artist"]
-  Just artist
+  maybeParse resp ["metadata", "artist"]
   where pth = "/artist/" `append` mbid
 
 withReadEnv :: (Text -> MusicBrainzM a) -> MusicBrainzM a
