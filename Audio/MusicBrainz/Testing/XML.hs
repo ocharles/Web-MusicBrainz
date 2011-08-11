@@ -7,6 +7,7 @@ import Data.ISO3166_CountryCodes
 import Audio.MusicBrainz.Testing.Ext
 import Audio.MusicBrainz.Types
 import Audio.MusicBrainz.XML
+import Audio.MusicBrainz.XML.FromXML
 
 specs ::  IO [IO Spec]
 specs = descriptions [fromXML_artist_full, fromXML_artist_min]

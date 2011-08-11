@@ -31,12 +31,12 @@ fromXMLLBS :: (Functor m,
               => LBS.ByteString
               -> [Text]
               -> m a
-fromXMLLBS lbs nodes = readXMLLBS lbs <//=> nodes
+fromXMLLBS lbs nodes = readXMLLBS lbs !<//=> nodes
 
 
 fromXMLFile :: (FromXML a) => FilePath -> [Text] -> IO a
 fromXMLFile path nodes = do root <- readXMLFile path 
-                            return $ root <//=> nodes
+                            root !<//=> nodes
 
 readXMLFile :: FilePath -> IO Cursor
 readXMLFile path = fromDocument `fmap` readFile_ path decodeEntities

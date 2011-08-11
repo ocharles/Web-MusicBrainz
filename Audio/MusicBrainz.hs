@@ -13,15 +13,17 @@
 -- 
 --------------------------------------------------------------------
 
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 module Audio.MusicBrainz (version, getArtistByMBID) where
 
 import           Audio.MusicBrainz.Types
 import           Audio.MusicBrainz.Monad
 import           Audio.MusicBrainz.XML
+import           Audio.MusicBrainz.XML.FromXML (FromXML, XmlException)
 
 import           Control.Monad.Reader
 import           Control.Applicative (Applicative)
+import qualified Control.Failure as F
 import           Data.ByteString (ByteString)
 import           Data.Text (Text, append, pack)
 import qualified Data.Text as T

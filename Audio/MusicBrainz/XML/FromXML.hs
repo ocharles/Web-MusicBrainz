@@ -14,21 +14,24 @@ module Audio.MusicBrainz.XML.FromXML (FromXML,
                                       (!<=>),
                                       (?<=>),
                                       (<//.>),
+                                      (!<//.>),
                                       (<//=>),
+                                      (!<//=>),
                                       (!<//|>),
                                       XmlException
                                       ) where
 
-import Control.Applicative
-import Control.Exception (Exception)
-import Control.Failure (Failure)
-import Control.Monad
-import Data.Maybe (listToMaybe)
-import Data.Monoid
-import Data.Text (Text, unpack)
-import Data.Typeable (Typeable)
-import Text.XML.Enumerator.Cursor
-import Text.XML.Enumerator.Resolved
+import           Control.Applicative
+import           Control.Exception (Exception)
+import           Control.Failure (Failure)
+import           Control.Monad
+import           Data.Maybe (listToMaybe)
+import           Data.Monoid
+import           Data.Text (Text, unpack, append)
+import qualified Data.Text as T
+import           Data.Typeable (Typeable)
+import           Text.XML.Enumerator.Cursor
+import           Text.XML.Enumerator.Resolved
 
 -- FromXML inspired by Aeson's FromJSON typeclass
 class FromXML a where
@@ -74,8 +77,15 @@ el ?<=> n = fromXML =<< el ?<.> n
 (<//.>) :: Cursor -> [Text] -> [Cursor]
 el <//.> path = el $/ (foldl1 (&/) $ map laxElement path)
 
+(!<//.>) :: (Functor m, Applicative m, Failure XmlException m) => Cursor -> [Text] -> m Cursor
+el !<//.> path = forceEx ("missing " ++ pathStr) $ el $/ (foldl1 (&/) $ map laxElement path)
+  where pathStr = T.unpack . T.concat $ path
+
 (<//=>) :: (FromXML a, Functor m, Applicative m, Failure XmlException m) => Cursor -> [Text] -> m [a]
 el <//=> path = mapM fromXML $ el <//.> path
+
+(!<//=>) :: (FromXML a, Functor m, Applicative m, Failure XmlException m) => Cursor -> [Text] -> m a
+el !<//=> path = fromXML =<< el !<//.> path
 
 (!<//|>) :: Cursor -> [Text] -> [Text]
 el !<//|> path = concatMap ($/ content) $ el <//.> path
