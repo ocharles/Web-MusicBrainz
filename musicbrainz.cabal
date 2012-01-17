@@ -2,35 +2,38 @@ name: musicbrainz
 version: 0.0.0
 synopsis: Haskell implementation of the MusicBrainz API
 description:
-   Implements the MusicBrainz REST API. MusicBrainz is an open music
-   identification database, comparable to CDDB. Learn more at
+   Implements the 2nd version of the MusicBrainz REST API. MusicBrainz is an
+   open music identification database, comparable to CDDB. Learn more at
    <http://www.musicbrainz.com>.
 
-category:           Audio
+category:           Audio, Web
 license:            BSD3
 license-file:       LICENSE
-author:             Michael Xavier <michael@michaelxavier.net>
-maintainer:         Michael Xavier <michael@michaelxavier.net>
+author:             Michael Xavier <michael@michaelxavier.net>,
+                    Oliver Charles <oliver@ocharles.org.uk>
+maintainer:         Oliver Charles <oliver@ocharles.org.uk>
 cabal-version:      >= 1.6
 build-type:         Simple
 extra-source-files: README
-homepage:           http://github.com/michaelxavier/MusicBrainz
+homepage:           http://github.com/ocharles/Web-MusicBrainz
 
 library
- Exposed-modules: Audio.MusicBrainz,
-                  Audio.MusicBrainz.Types,
-                  Audio.MusicBrainz.Monad
+ Exposed-modules: Web.MusicBrainz,
+                  Web.MusicBrainz.Types
  Ghc-Options:     -Wall
- build-depends:   base            >= 4        && < 5,
-                  text            >= 0.11.0.5 && < 0.12,
-                  http-enumerator >= 0.6.5    && < 0.7,
-                  http-types      >= 0.6.0    && < 0.7,
-                  url             >= 2.1.2    && < 2.3,
-                  iso3166-country-codes == 0.20101223.3,
-                  split           >= 0.1.4    && < 0.2,
-                  mtl             >= 2.0.1.0  && < 2.1,
-                  xml-enumerator  >= 0.3.4    && < 0.4
+ build-depends:   base            >= 4         && < 5,
+                  text            >= 0.11.0.5  && < 0.12,
+                  http-conduit,
+                  iso3166-country-codes ==0.20110810.4,
+                  split           >= 0.1.4     && < 0.2,
+                  mtl             >= 2.0.1.0   && < 2.1,
+                  xml-conduit,
+                  failure,
+                  bytestring,
+                  transformers,
+                  uuid,
+                  conduit
 
 source-repository head
   type:     git
-  location: git://github.com/michaelxavier/MusicBrainz.git
+  location: git://github.com/ocharles/Web-MusicBrainz.git

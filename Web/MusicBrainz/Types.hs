@@ -1,6 +1,6 @@
 --------------------------------------------------------------------
 -- |
--- Module      : Audio.MusicBrainz.Types
+-- Module      : Web.MusicBrainz.Types
 -- Description : Types returned by the Campfire API
 -- Copyright   : (c) Michael Xavier 2011
 -- License     : MIT
@@ -12,7 +12,7 @@
 --------------------------------------------------------------------
 
 {-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
-module Audio.MusicBrainz.Types (Artist(..),
+module Web.MusicBrainz.Types (Artist(..),
                                 PartialDate(..),
                                 Label(..),
                                 Direction(..),

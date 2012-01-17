@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Audio.MusicBrainz.Testing.Ext (readFixture) where
+module Web.MusicBrainz.Testing.Ext (readFixture) where
 
 import Test.Hspec.Core
 import Text.XML.Enumerator.Resolved (readFile_)

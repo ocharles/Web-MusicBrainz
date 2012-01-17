@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Audio.MusicBrainz.Testing.XML (specs) where
+module Web.MusicBrainz.Testing.XML (specs) where
 
 import Test.Hspec
 import Text.XML.Enumerator.Cursor (Cursor)
 import Data.ISO3166_CountryCodes
-import Audio.MusicBrainz.Testing.Ext
-import Audio.MusicBrainz.Types
-import Audio.MusicBrainz.XML
-import Audio.MusicBrainz.XML.FromXML
+import Web.MusicBrainz.Testing.Ext
+import Web.MusicBrainz.Types
+import Web.MusicBrainz.XML
+import Web.MusicBrainz.XML.FromXML
 
 specs ::  IO [IO Spec]
 specs = descriptions [fromXML_artist_full, fromXML_artist_min]
