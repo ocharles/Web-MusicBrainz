@@ -74,10 +74,9 @@ instance FromXML RelationshipList where
   fromXML = parseRelationshipList
 
 instance FromXML LifeSpan where
-  fromXML el = return (pDate <$> fromEl "begin", pDate <$> fromEl "end")
-    where pDate txt               = (finalize . pad 3) $ splitOn "-" txt
-          finalize (Just a:b:c:_) = PartialDate (read a) (read <$> b) (read <$> c)
-          fromEl n                = T.unpack <$> el ?<|> n
+  fromXML el = return ( parseDate <$> el ?<|> "begin"
+                      , parseDate <$> el ?<|> "end"
+                      )
 
 instance FromXML Recording where
   fromXML el = Recording <$>                                 el !<@> "id"
@@ -109,7 +108,7 @@ instance FromXML Release where
                        <*> (pure $ listToMaybe =<<       el <//=> ["text-representation"])
                        <*>                               el <//=> ["artist-credit", "name-credit"]
                        <*> (pure $ listToMaybe =<<       el <//=> ["release-group"])
-                       <*> (pure $ parseDate =<<         el ?<|> "date")
+                       <*> (pure $ parseDate <$>         el ?<|> "date")
                        <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
                        <*> (pure $                       el ?<|> "barcode")
                        <*> (pure $ ASIN <$>              el ?<|> "asin")
@@ -121,7 +120,7 @@ instance FromXML ReleaseGroup where
                             <*>                           el !<|> "title"
                             <*> (pure $                   el ?<|> "disambiguation")
                             <*> (pure $                   el ?<|> "comment")
-                            <*> (pure $ parseDate =<<     el ?<|> "release-date")
+                            <*> (pure $ parseDate <$>     el ?<|> "release-date")
                             <*>                           el <//=> ["artist-credit", "name-credit"]
                             <*>                           el <//=> ["release-list", "release"]
                             <*> (mapM parseRelationshipList $ el <//.> ["relation-list"])
@@ -201,7 +200,9 @@ parseWorkRelationship :: (Functor m, Applicative m,  Failure XmlException m) => 
 parseWorkRelationship el = parseRelationship' WorkRelationship el "work"
 
 --TODO: refactor
-parseDate = undefined --TODO
+parseDate :: Text -> PartialDate
+parseDate txt = (finalize . pad 3) $ splitOn "-" $ T.unpack txt
+  where finalize (Just a:b:c:_) = PartialDate (read a) (read <$> b) (read <$> c)
 
 parseLifeSpan :: (Functor m, Applicative m,  Failure XmlException m) => Maybe Cursor -> m LifeSpan
 parseLifeSpan Nothing   = return (Nothing, Nothing)
