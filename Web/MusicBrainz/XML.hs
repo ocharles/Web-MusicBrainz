@@ -70,8 +70,8 @@ instance FromXML Label where
 instance FromXML MBID where
   fromXML el = MBID <$> cont el
 
-instance FromXML RelationList where
-  fromXML = parseRelationList
+instance FromXML RelationshipList where
+  fromXML = parseRelationshipList
 
 instance FromXML LifeSpan where
   fromXML el = return (pDate <$> fromEl "begin", pDate <$> fromEl "end")
@@ -87,7 +87,7 @@ instance FromXML Recording where
                          <*>                                 el <//=> ["artist-credit", "name-credit"]
                          <*>                                 el <//=> ["release-list", "release"]
                          <*> (                               liftM2 (++) puids isrcs)
-                         <*> (mapM parseRelationList $       el <//.> ["relation-list"])
+                         <*> (mapM parseRelationshipList $       el <//.> ["relation-list"])
                          <*> (pure $                         parseUserTags el ++ parseUserTags el)
                          <*> (pure $ listToMaybe =<<         el <//=> ["rating"])
                          <*> (pure $ listToMaybe =<<         el <//=> ["user-rating"])
@@ -113,7 +113,7 @@ instance FromXML Release where
                        <*> (pure $ (read . T.unpack) <$> el ?<|> "country")
                        <*> (pure $                       el ?<|> "barcode")
                        <*> (pure $ ASIN <$>              el ?<|> "asin")
-                       <*> (mapM parseRelationList $     el <//.> ["relation-list"])
+                       <*> (mapM parseRelationshipList $     el <//.> ["relation-list"])
 
 instance FromXML ReleaseGroup where
   fromXML el = ReleaseGroup <$>                           el !<@> "id"
@@ -124,7 +124,7 @@ instance FromXML ReleaseGroup where
                             <*> (pure $ parseDate =<<     el ?<|> "release-date")
                             <*>                           el <//=> ["artist-credit", "name-credit"]
                             <*>                           el <//=> ["release-list", "release"]
-                            <*> (mapM parseRelationList $ el <//.> ["relation-list"])
+                            <*> (mapM parseRelationshipList $ el <//.> ["relation-list"])
                             <*> (pure $                   parseUserTags el ++ parseUserTags el)
                             <*> (pure $ listToMaybe =<<   el <//=> ["rating"])
                             <*> (pure $ listToMaybe =<<   el <//=> ["user-rating"])
@@ -155,50 +155,50 @@ instance FromXML TextRepresentation where
           script   = el ?<|> "script"
 
 ---- Helpers
-parseRelationList :: (Functor m, Applicative m, Failure XmlException m) => Cursor -> m RelationList
-parseRelationList el = do tt <- el !<@> "target-type"
-                          mapM (parseRelation $ T.unpack tt) rels
+parseRelationshipList :: (Functor m, Applicative m, Failure XmlException m) => Cursor -> m RelationshipList
+parseRelationshipList el = do
+  tt <- el !<@> "target-type"
+  mapM (parseRelationship $ T.unpack tt) rels
   where rels = el <//.> ["relation"]
 
-parseRelation :: (Functor m, Applicative m, Failure XmlException m) => String -> Cursor -> m Relation
-parseRelation "artist"        el = parseArtistRelation el
-parseRelation "release"       el = parseReleaseRelation el
-parseRelation "release-group" el = parseReleaseGroupRelation el
-parseRelation "recording"     el = parseRecordingRelation el
-parseRelation "label"         el = parseLabelRelation el
-parseRelation "work"          el = parseWorkRelation el
-parseRelation t               el = fail $ "Unexpected target-type " ++ t
+parseRelationship :: (Functor m, Applicative m, Failure XmlException m) => String -> Cursor -> m Relationship
+parseRelationship "artist"        el = parseArtistRelationship el
+parseRelationship "release"       el = parseReleaseRelationship el
+parseRelationship "release-group" el = parseReleaseGroupRelationship el
+parseRelationship "recording"     el = parseRecordingRelationship el
+parseRelationship "label"         el = parseLabelRelationship el
+parseRelationship "work"          el = parseWorkRelationship el
+parseRelationship t               el = fail $ "Unexpected target-type " ++ t
 
-parseRelation' :: (Functor m, Applicative m, Failure XmlException m, FromXML a)
-                  => (Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relation)
+parseRelationship' :: (Functor m, Applicative m, Failure XmlException m, FromXML a)
+                  => (Text -> MBID -> LifeSpan -> Maybe Direction -> a -> Relationship)
                   -> Cursor
                   -> Text
-                  -> m Relation
-parseRelation' con el n = con <$> el !<|> "type"
+                  -> m Relationship
+parseRelationship' con el n = con <$> el !<|> "type"
                               <*> (el !<=> "target")
                               <*> fromXML el
                               <*> (pure $ el ?<=> "direction")
                               <*> el !<=> n
 
 
-parseArtistRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseArtistRelation el = parseRelation' ArtistRelation el "artist"
+parseArtistRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseArtistRelationship el = parseRelationship' ArtistRelationship el "artist"
 
+parseReleaseRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseReleaseRelationship el = parseRelationship' ReleaseRelationship el "release"
 
-parseReleaseRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseReleaseRelation el = parseRelation' ReleaseRelation el "release"
+parseReleaseGroupRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseReleaseGroupRelationship el = parseRelationship' ReleaseGroupRelationship el "release-group"
 
-parseReleaseGroupRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseReleaseGroupRelation el = parseRelation' ReleaseGroupRelation el "release-group"
+parseRecordingRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseRecordingRelationship el = parseRelationship' RecordingRelationship el "recording"
 
-parseRecordingRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseRecordingRelation el = parseRelation' RecordingRelation el "recording"
+parseLabelRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseLabelRelationship el = parseRelationship' LabelRelationship el "label"
 
-parseLabelRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseLabelRelation el = parseRelation' LabelRelation el "label"
-
-parseWorkRelation :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relation
-parseWorkRelation el = parseRelation' WorkRelation el "work"
+parseWorkRelationship :: (Functor m, Applicative m,  Failure XmlException m) => Cursor -> m Relationship
+parseWorkRelationship el = parseRelationship' WorkRelationship el "work"
 
 --TODO: refactor
 parseDate = undefined --TODO
