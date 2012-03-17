@@ -27,7 +27,7 @@ import Data.Conduit (($$), ResourceT, ResourceIO, runResourceT)
 import Data.List (intercalate)
 import Data.Text (Text)
 import Data.UUID (UUID, toString)
-import Network.HTTP.Conduit (Manager, http, responseBody, newManager)
+import Network.HTTP.Conduit (Manager, http, responseBody, withManager)
 import qualified Network.HTTP.Conduit as H
 import Text.XML (sinkDoc)
 import qualified Text.XML as XML
@@ -270,7 +270,4 @@ runAndParse resourcePath incFlags docPath = do
   where incString = BS.pack $ "inc=" ++ intercalate "+" (map incFlag incFlags)
 
 runMusicBrainz :: ResourceIO m => ResourceT (ReaderT Manager m) a -> m a
-runMusicBrainz actions = runResourceT $ do
-  manager <- newManager
-  transResourceT (runWithManager manager) actions
-  where runWithManager manager a = runReaderT a manager
+runMusicBrainz actions = withManager $ \m -> transResourceT (\a -> runReaderT a m) actions
